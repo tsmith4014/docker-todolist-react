@@ -1,0 +1,43 @@
+#####these are the manual commands to run build the images and run the docker containers for the 3 tier stack - nginx serving the frontend .html, mariadb, and the flask app #####
+docker run -d --name todo-database-server \
+  --network todolist-network \
+  -e MYSQL_ROOT_PASSWORD=Chandra@123 \
+  -e MYSQL_DATABASE=todo_db \
+  -p 3306:3306 \
+  mariadb:10.5
+
+
+##################db above and flask below#####################
+cd /Users/chadthompsonsmith/DevOpsAlpha/docker/docker-todolist-react/todolist-flask
+docker build -t todo-flask-app-image -f Dockerfile .
+docker run -d -p 5001:80 --network todolist-network \
+  -e MYSQL_DATABASE_HOST=todo-database-server \
+  -e MYSQL_DATABASE_USER=root \
+  -e MYSQL_DATABASE_PASSWORD=Chandra@123 \
+  -e MYSQL_DATABASE_DB=todo_db \
+  -e MYSQL_DATABASE_PORT=3306 \
+  --name todolist-flask-container \
+  todo-flask-app-image
+
+
+#####################nginx######################################
+
+cd /Users/chadthompsonsmith/DevOpsAlpha/docker/docker-todolist-react/todolist-flask-react
+docker build -t my-nginx -f Dockerfile-nginx .
+docker run -d -p 8080:80 --network todolist-network --name my-nginx-container my-nginx
+
+
+
+#####################react######################################
+
+cd /Users/chadthompsonsmith/DevOpsAlpha/docker/docker-todolist-react/todolist-flask-react
+docker build -t todo-react-app-image -f Dockerfile-react .
+docker run -d -p 3000:80 --network todolist-network \
+  --name todo-react-container \
+  todo-react-app-image
+
+
+#########################################
+docker compose down --volume
+ 
+override img: docker compose up --build
